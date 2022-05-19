@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/valyala/fasthttp"
 	"math"
 	"math/rand"
 	"os"
@@ -10,6 +9,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/valyala/fasthttp"
 )
 
 var _version = "1.0.3"
@@ -108,17 +109,23 @@ func PostJson(url string, jsonData string) {
 		atomic.AddInt64(&failed, 1)
 		return
 	}
+	if resp.StatusCode() == 200 {
+		response := string(resp.Body())
 
-	response := string(resp.Body())
+		traffics += int64(len(jsonData) + len(response))
 
-	traffics += int64(len(jsonData) + len(response))
-
-	if strings.Contains(response, "\"error\"") {
-		atomic.AddInt64(&rpcFailed, 1)
-		println(response)
+		if strings.Contains(response, "\"error\"") {
+			atomic.AddInt64(&rpcFailed, 1)
+			println(response)
+		} else {
+			atomic.AddInt64(&success, 1)
+		}
 	} else {
-		atomic.AddInt64(&success, 1)
+		atomic.AddInt64(&failed, 1)
+		response := string(resp.Body())
+		println(response)
 	}
+
 }
 
 func randomAddr() string {
